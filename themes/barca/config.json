@@ -17,7 +17,7 @@
   "columns": 7,
   "background_color": "#040816",
   "wallpaper": true,
-  "wallpaper_dim": 0,
+  "wallpaper_dim": 25,
   "cinematic_home": true,
   "dock_glass": false,
   "icon_only_buttons": true,
