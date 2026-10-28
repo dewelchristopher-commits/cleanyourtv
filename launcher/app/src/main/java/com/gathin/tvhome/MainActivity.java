@@ -579,6 +579,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
+        // row_top: the panel is a card, so its countdown reads smaller than the full-width F1 panel's.
+        if (rowTop) raceHeadline.setTextSize(24f);
         raceSessions = findViewById(R.id.raceSessions);
         raceBar = findViewById(R.id.raceBar);
         racePager = findViewById(R.id.racePager);
