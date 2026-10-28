@@ -67,6 +67,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.PopupWindow;
+import android.widget.TextClock;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -590,6 +591,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (lunar) lunarDate.setVisibility(View.VISIBLE);
         greetingName = cfg.greetingName;
         if (cfg.dateBelowClock) moveDateBelowClock();
+        if ("editorial".equals(cfg.clockStyle) && !cfg.dateBelowClock) applyEditorialClock();
         if (shamsi) {
             shamsiDate.setVisibility(View.VISIBLE);
             TextView date = findViewById(R.id.date);
@@ -2441,6 +2443,59 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * date_below_clock: the date column moves to its own line under the clock, in the vertical LinearLayout that holds
      * the clock's row, and the line between them goes. In Hebrew (rtl_menu_bar) the date and the clock's row sit right.
      */
+    /**
+     * clock_style "editorial": a larger, lighter clock, a thin garnet-to-blue rule, and the date beside it on two
+     * lines, the weekday in small capitals over the day and month. The original date line is kept, only hidden, so
+     * everything that reads it still works.
+     */
+    private void applyEditorialClock() {
+        TextView clock = findViewById(R.id.clock);
+        clock.setTextSize(TypedValue.COMPLEX_UNIT_SP, 68);
+        clock.setTypeface(UiFont.get(this, R.string.font_extralight));
+        clock.setLetterSpacing(-0.03f);
+        View rule = findViewById(R.id.clockDivider);
+        GradientDrawable colours = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] {0xFFC0175F, 0xFF2F7BEA});
+        colours.setCornerRadius(density);
+        rule.setBackground(colours);
+        LinearLayout.LayoutParams rl = (LinearLayout.LayoutParams) rule.getLayoutParams();
+        rl.width = Math.round(2 * density);
+        rl.height = Math.round(46 * density);
+        rl.setMarginStart(Math.round(22 * density));
+        rl.setMarginEnd(Math.round(18 * density));
+        rl.bottomMargin = Math.round(11 * density);
+        rule.setLayoutParams(rl);
+
+        TextView date = findViewById(R.id.date);
+        ViewGroup column = (ViewGroup) date.getParent();
+        int at = column.indexOfChild(date);
+        date.setVisibility(View.GONE);
+        TextClock weekday = new TextClock(this);
+        weekday.setFormat12Hour("EEEE");
+        weekday.setFormat24Hour("EEEE");
+        weekday.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        weekday.setTypeface(UiFont.get(this, R.string.font_medium));
+        weekday.setLetterSpacing(0.3f);
+        weekday.setAllCaps(true);
+        weekday.setTextColor(0xE6EDBB00);
+        weekday.setIncludeFontPadding(false);
+        weekday.setSingleLine(true);
+        TextClock day = new TextClock(this);
+        day.setFormat12Hour("d MMMM");
+        day.setFormat24Hour("d MMMM");
+        day.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        day.setTypeface(UiFont.get(this, R.string.font_light));
+        day.setTextColor(Color.WHITE);
+        day.setIncludeFontPadding(false);
+        day.setSingleLine(true);
+        column.addView(weekday, at, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        dl.topMargin = Math.round(7 * density);
+        column.addView(day, at + 1, dl);
+    }
+
     private void moveDateBelowClock() {
         View column = (View) findViewById(R.id.date).getParent();
         View clockRow = (View) findViewById(R.id.clock).getParent();

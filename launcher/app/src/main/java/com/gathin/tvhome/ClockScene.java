@@ -1,6 +1,9 @@
 package com.gathin.tvhome;
 
 import android.animation.ArgbEvaluator;
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -61,6 +64,9 @@ final class ClockScene {
     private String order;
     private Map<String, Set<String>> moods;
     private String latitude, longitude;
+    /** A theme's clock.jpg: a slow zoom on it while the screensaver is up (with animations on). */
+    private boolean picture, motion;
+    private ObjectAnimator drift;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -99,6 +105,8 @@ final class ClockScene {
     void stop() {
         handler.removeCallbacksAndMessages(null);   // the tick and any glow steps still queued
         content.animate().cancel();
+        if (drift != null) drift.cancel();
+        drift = null;
         wallpaperGeneration++;   // a decode still running must not attach its picture to a stopped scene
     }
 
@@ -114,6 +122,16 @@ final class ClockScene {
         try {
             cfg = Config.load(ctx);
         } catch (RuntimeException e) {
+            return;
+        }
+        if (cfg.clockPicture != null) {
+            // The theme's own picture for the clock, whatever Home shows; it holds still, so no rotation.
+            wallpaperFile = cfg.clockPicture;
+            rotation = null;
+            picture = true;
+            motion = cfg.animations && !cfg.reducedMotion;
+            wallpaperShade = (cfg.clockWallpaperDim * 255 / 100) << 24;
+            wallpaperRes = ctx.getResources();
             return;
         }
         if (!cfg.clockWallpaper) {
@@ -169,8 +187,24 @@ final class ClockScene {
                 ambient.setBackground(null);
                 ambient.setImageDrawable(new LayerDrawable(new Drawable[]{
                         new BitmapDrawable(res, bmp), new ColorDrawable(shade)}));
+                if (picture && motion) startDrift();
             });
         }, "clock-wallpaper").start();
+    }
+
+    /**
+     * clock.jpg: the picture eases in by 8% and back over two minutes, as a view property, so the scene costs no
+     * redraw of its own beyond the clock's once a minute.
+     */
+    private void startDrift() {
+        if (drift != null) return;
+        drift = ObjectAnimator.ofPropertyValuesHolder(ambient,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.08f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.08f));
+        drift.setDuration(60_000L);
+        drift.setRepeatCount(ValueAnimator.INFINITE);
+        drift.setRepeatMode(ValueAnimator.REVERSE);
+        drift.start();
     }
 
     /** WallpaperPlayer's decode: sampled and scaled down to cover the screen, never bigger than 4K. */

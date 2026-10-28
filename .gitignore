@@ -23,3 +23,5 @@ launcher/hs_err_pid*.log
 launcher/replay_pid*.log
 # Your own stadium photos for the barca theme stay on your computer.
 themes/barca/wallpapers/
+# Your own picture for the barca theme's clock screensaver stays on your computer.
+themes/barca/clock.jpg

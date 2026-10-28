@@ -28,7 +28,7 @@
   "focus_overshoot": false,
   "advanced_effects": true,
   "wifi_status_color": true,
-  "home_idle_clock_minutes": 15,
+  "home_idle_clock_minutes": 10,
   "clock_wallpaper": true,
   "greeting_name": "Chris",
   "app_library": true,
@@ -69,5 +69,7 @@
   "dock_only": true,
   "pomodoro": true,
   "show_network_pill": false,
-  "show_inputs_pill": false
+  "show_inputs_pill": false,
+  "clock_style": "editorial",
+  "clock_wallpaper_dim": 20
 }

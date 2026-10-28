@@ -138,6 +138,7 @@ A new key needs one there in the same pull request.
 | `home_idle_clock_minutes` | 0 to 1440 | Minutes Home may sit untouched before it shows the clock screensaver (a thin clock and date drifting over a slow glow, as the system "Clock" screensaver does). Any key returns to Home. It starts only from Home, never over Live TV or an app; 0 is off (default) |
 | `clock_wallpaper` | bool | The clock screensaver over Home's wallpaper instead of black with a coloured glow; the clock still moves every minute (`false` by default) |
 | `clock_wallpaper_dim` | 0 to 90 | How dark that wallpaper is behind the clock, in percent (50 by default) |
+| `clock_style` | string | The header clock's look: empty for the original, `editorial` for a larger, lighter clock, a thin garnet-to-blue rule and the date beside it on two lines, the weekday in small capitals over the day and month |
 | `clock_glow` | bool | The clock screensaver's coloured glow (`true` by default); `false` leaves the moving clock on plain black, e.g. for an OLED |
 | `glow_style` | string | Shape of the glow behind the focused app, in its colour: `radial` (default) or `horizon`, the colour washing down from the top edge to black; the cinematic shelf keeps its own |
 | `glass_style` | string | Look of the focus highlight: `glass` (default: a translucent slab with a bright top sheen, a crisp rim and a faint outer glow), `rim` (the crisp rim alone, no sheen, fill or glow, for a quiet focus over a wallpaper) or `halo` (the rim with a lighter outer glow) |
@@ -161,6 +162,11 @@ A new key needs one there in the same pull request.
 | `fade_rows` | bool | The rows fade out as they scroll up under the clock instead of being cut off at a hard line; the wallpaper or sky shows through. The grid then draws into a hardware layer (about 6 MB of graphics memory at 1080p) (`false` by default) |
 
 ## Wallpapers
+
+A `clock.jpg` beside `config.json` is the clock screensaver's own picture: it shows behind the clock (Home left
+idle for `home_idle_clock_minutes`, or the system screensaver set to the launcher's Clock) instead of Home's
+wallpaper, darkened by `clock_wallpaper_dim` and easing in slowly while animations are on. `tools/theme.sh` pushes
+it with the theme and removes it when a theme has none.
 
 `wallpaper.jpg` is drawn full screen behind the launcher, centre-cropped. Keep it dark, 1920×1080 and
 under about 300 KB: the text, the hero name and the dock band are designed for black, and a 1 GB TV
