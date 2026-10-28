@@ -228,7 +228,9 @@ final class ClockScene {
         box.setOrientation(LinearLayout.HORIZONTAL);
         box.setGravity(Gravity.BOTTOM);
         TextView time = root.findViewById(R.id.dreamClock);
-        weight(time, ctx, 200);
+        weight(time, ctx, 100);
+        // The corner shade gives the contrast; a shadow on so thin a stroke reads as an outline.
+        time.setShadowLayer(0, 0, 0, 0);
         time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 84);
         time.setLetterSpacing(-0.02f);
         root.findViewById(R.id.dreamDate).setVisibility(View.GONE);
@@ -260,13 +262,13 @@ final class ClockScene {
     }
 
     /**
-     * Richer colours for the theme's picture: 35% more saturation and 12% more contrast around the middle grey, so
+     * Richer colours for the theme's picture: 50% more saturation and 15% more contrast around the middle grey, so
      * an illustration does not look washed out on the panel. Applied by the GPU when the picture is drawn.
      */
     static ColorMatrix vivid() {
         ColorMatrix m = new ColorMatrix();
-        m.setSaturation(1.35f);
-        float c = 1.12f, t = (1f - c) * 128f;
+        m.setSaturation(1.5f);
+        float c = 1.15f, t = (1f - c) * 128f;
         m.postConcat(new ColorMatrix(new float[]{
                 c, 0, 0, 0, t,
                 0, c, 0, 0, t,
@@ -292,7 +294,6 @@ final class ClockScene {
         weight(t, ctx, wght);
         t.setTextColor(colour);
         t.setIncludeFontPadding(false);
-        t.setShadowLayer(6, 0, 1, 0x40000000);
         return t;
     }
 
