@@ -54,7 +54,7 @@
   "always_show_names": false,
   "library_ok_opens": true,
   "show_library_pill": false,
-  "glass_style": "rim",
+  "glass_style": "halo",
   "single_row": true,
   "uniform_tiles": true,
   "dock_band": false,
