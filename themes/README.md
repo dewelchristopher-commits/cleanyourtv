@@ -21,6 +21,7 @@ refused (copy a theme first), and a `config.json` it cannot read is named before
 |---|---|---|
 | `default/` | The built-in look written out as JSON, as a starting point for your own | <img src="default/screenshot.jpg" width="320" alt="default theme"> |
 | `aurora/` | A dark aurora wallpaper (teal and violet on navy, darker at the bottom) with a matching background colour | <img src="aurora/screenshot.jpg" width="320" alt="aurora theme"> |
+| `barca/` | Camp Nou at night in blaugrana, drawn in code by `make_wallpaper.py` (no photo, no crest), with swaying floodlight beams (`floodlights`), five apps in one PS5-style row of square icons with a white rim and everything else in the App library | <img src="barca/screenshot.jpg" width="320" alt="barca theme"> |
 | `dussehra/` | Festive skin for Dussehra (ends 21 Oct 2026): a marigold toran, a faint gold rangoli, a diya for Wi-Fi, a bell for Inputs, a marigold for Settings and a petal shower | <img src="dussehra/screenshot.jpg" width="320" alt="dussehra theme"> |
 | `glass/` | Dark navy wallpaper with soft teal and violet light, the cinematic top shelf, a frosted-glass dock, icon-only buttons and the focus glow in the app's colour, gliding without overshoot | <img src="glass/screenshot.jpg" width="320" alt="glass theme"> |
 | `nature-calm/` | Twelve calm nature photos from Wikimedia Commons (misty karst and forest, autumn lakes, spring bluebells, winter frost, mossy woods, a rainforest lake, waterfalls), a new one every five minutes in random order with its place and photographer under the buttons; six small tiles in a frosted-glass dock, round icon-only buttons, no hero name. The photos are CC BY / CC BY-SA, not MIT: see `nature-calm/CREDITS.md` | <img src="nature-calm/screenshot.jpg" width="320" alt="nature-calm theme"> |
@@ -147,6 +148,7 @@ A new key needs one there in the same pull request.
 | `cinematic_art` | 0 to 100 | With `cinematic_home`, the opacity of the focused app's softened artwork (`50` by default); `0` leaves the wallpaper uncovered |
 | `dock_even_padding` | bool | The dock band's padding equals the gap between its tiles on all four sides, as far as the grid's edges leave room (`false` by default) |
 | `dock_glass` | bool | The dock band as light frosted glass like the top bar's pills (`false` by default); suits `sky_intensity` or a wallpaper, where the solid band reads as a dark slab |
+| `floodlights` | bool | Soft stadium floodlight beams that sway slowly over the wallpaper while Home is on screen, for a stadium wallpaper such as `barca/`; they stand still with `animations` off or `reduced_motion` (`false` by default) |
 | `dock_band` | bool | Draw the dock band and its edge (`true` by default); `false` leaves the tiles floating on the wallpaper with no band, border or dark slab |
 | `single_row` | bool | Every app in the dock's row, the dock apps first, scrolling sideways; no grid below (`false` by default; needs `dock_row`) |
 | `dock_band_all` | bool | With `single_row`, the band runs behind every app in the row, not only the dock apps (`false` by default) |
