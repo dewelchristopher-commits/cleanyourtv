@@ -110,8 +110,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     static int COLUMNS = 4;
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
-    /** row_top: where the single row starts, under the band of cards below the header's clock and date. */
-    private static final float ROW_TOP_DP = 246;
     /** The pomodoro card's width, and its top: the band between the clock and the row with row_top. */
     private static final float CARD_WIDTH_DP = 270, CARD_TOP_DP = 140;
     private static final long STATS_MS = 10_000L;
@@ -718,8 +716,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
             // No dock to push down: the grid starts at the top, with room for the first row's zoom and glass.
             if (!MainActivity.this.dockRow) want = (int) (AppAdapter.TOP_ROOM_DP * density);
-            // row_top: the row sits just under the clock, and the name and the panel go below it.
-            if (rowTop) want = (int) (ROW_TOP_DP * density);
+            // row_top: the row sits under the pomodoro card (or straight under the header), and the name goes below
+            // it. The padding is in the grid's own coordinates, and the grid starts under the header, so measure.
+            if (rowTop) {
+                int[] at = new int[2], base = new int[2];
+                grid.getLocationInWindow(at);
+                root.getLocationInWindow(base);
+                int gridTop = at[1] - base[1];
+                int above = pomodoroCard == null ? gridTop
+                        : (int) (CARD_TOP_DP * density) + Math.max(pomodoroCard.getHeight(), (int) (100 * density));
+                int names = singleRow && !cfg.alwaysShowNames ? (int) (29 * density) : 0;   // added back just below
+                want = Math.max((int) (8 * density), above + (int) (14 * density) - gridTop - names);
+            }
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
