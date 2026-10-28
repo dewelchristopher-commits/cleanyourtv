@@ -112,8 +112,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static final long MINUTE_MS = 60_000L;
     /** row_top: where the single row starts, under the band of cards below the header's clock and date. */
     private static final float ROW_TOP_DP = 246;
-    /** The pomodoro card's width, and the top of the band of cards (pomodoro, game_day with row_top). */
-    private static final float CARD_WIDTH_DP = 236, CARD_TOP_DP = 140;
+    /** The pomodoro card's width, and its top: the band between the clock and the row with row_top. */
+    private static final float CARD_WIDTH_DP = 270, CARD_TOP_DP = 140;
     private static final long STATS_MS = 10_000L;
     /**
      * 2025-01-01. TVs without a clock battery boot at the epoch (08:00 in China) and keep it until network
@@ -540,7 +540,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cfg.pomodoro) {
             // A glass card at the right of the band between the clock and the row (row_top), or under the top
             // buttons otherwise. Up from the row reaches it; Up from it reaches the top bar.
-            pomodoroCard = new PomodoroCard(this, new Pomodoro(this));
+            pomodoroCard = new PomodoroCard(this, new Pomodoro(this), cfg.animations && !cfg.reducedMotion);
+            // Its breathing light first, so it sits under the card, 20dp larger all round.
+            FrameLayout.LayoutParams halo = new FrameLayout.LayoutParams((int) ((CARD_WIDTH_DP + 40) * density),
+                    (int) (136 * density), Gravity.TOP | Gravity.END);
+            halo.topMargin = (int) ((CARD_TOP_DP - 20) * density);
+            halo.setMarginEnd((int) (36 * density));
+            root.addView(pomodoroCard.halo(), halo);
             FrameLayout.LayoutParams card = new FrameLayout.LayoutParams((int) (CARD_WIDTH_DP * density),
                     ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
             card.topMargin = (int) (CARD_TOP_DP * density);
@@ -560,13 +566,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             });
         }
         if (rowTop) {
-            // The row sits lower to leave a band of cards under the clock: the game_day panel becomes a glass card
-            // at the band's right, beside the pomodoro card when there is one.
+            // The row sits lower, under the band where the pomodoro card is; the game_day panel becomes a glass card
+            // at the bottom right, across from the focused app's name.
             FrameLayout.LayoutParams panel = (FrameLayout.LayoutParams) racePanel.getLayoutParams();
-            panel.gravity = Gravity.TOP | Gravity.END;
-            panel.topMargin = (int) (CARD_TOP_DP * density);
+            panel.gravity = Gravity.BOTTOM | Gravity.END;
+            panel.topMargin = 0;
+            panel.bottomMargin = (int) (44 * density);
             panel.setMarginStart(0);
-            panel.setMarginEnd((int) ((56 + (cfg.pomodoro ? CARD_WIDTH_DP + 16 : 0)) * density));
+            panel.setMarginEnd((int) (56 * density));
             racePanel.setLayoutParams(panel);
             racePanel.setBackground(PomodoroCard.glass(this, false));
             int pad = (int) (18 * density);

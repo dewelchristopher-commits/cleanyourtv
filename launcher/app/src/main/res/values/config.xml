@@ -296,8 +296,9 @@
          can set "wallpaper_drift": true. -->
     <bool name="wallpaper_drift">false</bool>
 
-    <!-- With single_row: a band of glass cards under the clock (the game_day panel, and the pomodoro card), then the
-         row of apps with the focused app's name below it instead of above, as on a games console's home screen.
+    <!-- With single_row: a band under the clock for the pomodoro card, then the row of apps with the focused app's
+         name below it instead of above, and the game_day panel as a glass card at the bottom right, as on a games
+         console's home screen.
          A theme can set "row_top": true. -->
     <bool name="row_top">false</bool>
 
