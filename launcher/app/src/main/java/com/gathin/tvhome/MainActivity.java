@@ -2451,7 +2451,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void applyEditorialClock() {
         TextView clock = findViewById(R.id.clock);
         clock.setTextSize(TypedValue.COMPLEX_UNIT_SP, 68);
-        clock.setTypeface(UiFont.get(this, R.string.font_extralight));
+        ClockScene.weight(clock, this, 200);
         clock.setLetterSpacing(-0.03f);
         View rule = findViewById(R.id.clockDivider);
         GradientDrawable colours = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
@@ -2474,7 +2474,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         weekday.setFormat12Hour("EEEE");
         weekday.setFormat24Hour("EEEE");
         weekday.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        weekday.setTypeface(UiFont.get(this, R.string.font_medium));
+        ClockScene.weight(weekday, this, 500);
         weekday.setLetterSpacing(0.3f);
         weekday.setAllCaps(true);
         weekday.setTextColor(0xE6EDBB00);
@@ -2484,7 +2484,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         day.setFormat12Hour("d MMMM");
         day.setFormat24Hour("d MMMM");
         day.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-        day.setTypeface(UiFont.get(this, R.string.font_light));
+        ClockScene.weight(day, this, 300);
         day.setTextColor(Color.WHITE);
         day.setIncludeFontPadding(false);
         day.setSingleLine(true);

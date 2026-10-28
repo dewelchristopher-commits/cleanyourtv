@@ -201,9 +201,7 @@ final class ClockScene {
                 if (own) {
                     // Its colours a little richer, no overall darkening, and only a soft shade in the corner
                     // where the clock sits, so the picture keeps its light and the time still reads.
-                    ColorMatrix rich = new ColorMatrix();
-                    rich.setSaturation(1.18f);
-                    ambient.setColorFilter(new ColorMatrixColorFilter(rich));
+                    ambient.setColorFilter(new ColorMatrixColorFilter(vivid()));
                     GradientDrawable corner = new GradientDrawable();
                     corner.setGradientType(GradientDrawable.RADIAL_GRADIENT);
                     corner.setGradientCenter(1f, 1f);
@@ -230,8 +228,8 @@ final class ClockScene {
         box.setOrientation(LinearLayout.HORIZONTAL);
         box.setGravity(Gravity.BOTTOM);
         TextView time = root.findViewById(R.id.dreamClock);
-        time.setTypeface(UiFont.get(ctx, R.string.font_extralight));
-        time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 112);
+        weight(time, ctx, 200);
+        time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 84);
         time.setLetterSpacing(-0.02f);
         root.findViewById(R.id.dreamDate).setVisibility(View.GONE);
 
@@ -240,33 +238,58 @@ final class ClockScene {
                 new int[]{0xFFC0175F, 0xFF2F7BEA});
         colours.setCornerRadius(d);
         rule.setBackground(colours);
-        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(Math.round(2 * d), Math.round(78 * d));
-        rl.setMargins(Math.round(26 * d), 0, Math.round(22 * d), Math.round(18 * d));
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(Math.round(2 * d), Math.round(58 * d));
+        rl.setMargins(Math.round(22 * d), 0, Math.round(18 * d), Math.round(14 * d));
         box.addView(rule, rl);
 
         LinearLayout date = new LinearLayout(ctx);
         date.setOrientation(LinearLayout.VERTICAL);
-        TextClock weekday = clockText(ctx, "EEEE", 16, R.string.font_medium, 0xF2EDBB00);
+        TextClock weekday = clockText(ctx, "EEEE", 12, 500, 0xF2EDBB00);
         weekday.setLetterSpacing(0.3f);
         weekday.setAllCaps(true);
         date.addView(weekday);
-        TextClock day = clockText(ctx, "d MMMM", 30, R.string.font_light, 0xFFFFFFFF);
+        TextClock day = clockText(ctx, "d MMMM", 22, 300, 0xFFFFFFFF);
         LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
-        dl.topMargin = Math.round(10 * d);
+        dl.topMargin = Math.round(8 * d);
         date.addView(day, dl);
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
-        cl.bottomMargin = Math.round(20 * d);
+        cl.bottomMargin = Math.round(15 * d);
         box.addView(date, cl);
     }
 
-    private static TextClock clockText(Context ctx, String format, float sp, int font, int colour) {
+    /**
+     * Richer colours for the theme's picture: 35% more saturation and 12% more contrast around the middle grey, so
+     * an illustration does not look washed out on the panel. Applied by the GPU when the picture is drawn.
+     */
+    static ColorMatrix vivid() {
+        ColorMatrix m = new ColorMatrix();
+        m.setSaturation(1.35f);
+        float c = 1.12f, t = (1f - c) * 128f;
+        m.postConcat(new ColorMatrix(new float[]{
+                c, 0, 0, 0, t,
+                0, c, 0, 0, t,
+                0, 0, c, 0, t,
+                0, 0, 0, 1, 0}));
+        return m;
+    }
+
+    /**
+     * Outfit at an exact weight. The font-family files name a weight, but some TVs (Android 8 and 9) draw the variable
+     * font's default instance from them, which reads as bold at this size; asking the view for the weight works there.
+     */
+    static void weight(TextView t, Context ctx, int wght) {
+        t.setTypeface(UiFont.get(ctx, R.string.font_body));
+        t.setFontVariationSettings("'wght' " + wght);
+    }
+
+    private static TextClock clockText(Context ctx, String format, float sp, int wght, int colour) {
         TextClock t = new TextClock(ctx);
         t.setFormat12Hour(format);
         t.setFormat24Hour(format);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
-        t.setTypeface(UiFont.get(ctx, font));
+        weight(t, ctx, wght);
         t.setTextColor(colour);
         t.setIncludeFontPadding(false);
         t.setShadowLayer(6, 0, 1, 0x40000000);
