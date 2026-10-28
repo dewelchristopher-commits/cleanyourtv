@@ -417,6 +417,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (festive) updateWifiLabel();
             sky.update();
             wallpaperPlayer.update();
+            updatePomodoroButton();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -813,6 +814,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
+        btnPomodoro = findViewById(R.id.btnPomodoro);
+        if (cfg.pomodoro) {
+            pomodoro = new Pomodoro(this);
+            btnPomodoro.setVisibility(View.VISIBLE);
+            btnPomodoro.setOnClickListener(v -> startActivity(new Intent(this, PomodoroActivity.class)));
+        }
         addTopBarApps(cfg.topBarApps, cfg.launchActions);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
@@ -877,9 +884,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         btnLibraryTop.setOnKeyListener(pillKeys);
+        btnPomodoro.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
+            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnPomodoro, btnLibraryTop, btnSettings));
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
@@ -1068,6 +1076,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sky.update();
         wallpaperPlayer.start();
         if (floodlights != null) floodlights.start();
+        updatePomodoroButton();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
             diya.start();
@@ -2900,10 +2909,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private ColorStateList wifiNoInternetTint, wifiOfflineTint;
     /** The app library button in the top bar (library_button). */
     private View btnLibraryTop;
+    /** pomodoro: the timer's button, and the timer it reads; null when off. */
+    private TextView btnPomodoro;
+    private Pomodoro pomodoro;
     /** The open library came from that button: closing it returns there instead of scrolling to the grid's end. */
     private boolean libraryFromTopBar;
     /** The open library came from the VPN pill (vpn_pill, no VPN app): closing it returns there while the pill still shows. */
     private boolean libraryFromVpnPill;
+
+    /** pomodoro: the time left in minutes on the button while a session or a break is under way, the icon alone otherwise. */
+    private void updatePomodoroButton() {
+        if (pomodoro == null) return;
+        long left = pomodoro.remaining(System.currentTimeMillis());
+        ViewGroup.LayoutParams lp = btnPomodoro.getLayoutParams();
+        if (pomodoro.active() && left > 0) {
+            long minutes = Math.max(1, (left + 59_999) / 60_000);
+            btnPomodoro.setText((pomodoro.phase() == Pomodoro.STUDY ? "" : "Pause \u00B7 ") + minutes + " min");
+            btnPomodoro.setCompoundDrawablePadding(Math.round(8 * density));
+            btnPomodoro.setPaddingRelative(Math.round(14 * density), 0, Math.round(16 * density), 0);
+            lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+        } else {
+            btnPomodoro.setText(null);
+            btnPomodoro.setCompoundDrawablePadding(0);
+            int pad = Math.round(10 * density);
+            btnPomodoro.setPaddingRelative(pad, 0, pad, 0);
+            lp.width = Math.round(42 * density);
+        }
+        btnPomodoro.setLayoutParams(lp);
+    }
 
     /** Turns a labelled top pill into the round TopButtonIcon shape: no text, the icon centred by even padding. */
     private void makeIconOnly(TextView pill) {

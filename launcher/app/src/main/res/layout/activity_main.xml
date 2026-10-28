@@ -364,6 +364,15 @@
                     android:drawableStart="@drawable/ic_swap_vert"
                     android:nextFocusDown="@+id/grid" />
 
+                <!-- pomodoro: the study timer; it shows the time left while a session or a break runs. -->
+                <TextView
+                    android:id="@+id/btnPomodoro"
+                    style="@style/TopButtonIcon"
+                    android:visibility="gone"
+                    android:contentDescription="@string/app_name"
+                    android:drawableStart="@drawable/ic_pomodoro"
+                    android:nextFocusDown="@+id/grid" />
+
                 <TextView
                     android:id="@+id/btnLibraryTop"
                     style="@style/TopButtonIcon"

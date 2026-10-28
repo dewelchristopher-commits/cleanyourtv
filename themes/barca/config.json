@@ -46,13 +46,14 @@
     "com.mlbam.wwe_asb_app",
     "fr.anidn",
     "com.ionitech.airscreen",
-    "com.mediatek.wwtv.tvcenter"
+    "com.mediatek.wwtv.tvcenter",
+    "com.tcl.tv"
   ],
   "fill_dock": false,
   "rows_below_dock": 0,
   "always_show_names": false,
   "library_ok_opens": true,
-  "show_library_pill": true,
+  "show_library_pill": false,
   "glass_style": "rim",
   "single_row": true,
   "uniform_tiles": true,
@@ -64,5 +65,7 @@
   "wallpaper_true_color": true,
   "wallpaper_drift": true,
   "wallpaper_rotation_minutes": 10,
-  "row_top": true
+  "row_top": true,
+  "dock_only": true,
+  "pomodoro": true
 }

@@ -300,6 +300,15 @@
          name below it instead of above, and the game_day panel moves to the bottom right, as on a games console's
          home screen. A theme can set "row_top": true. -->
     <bool name="row_top">false</bool>
+
+    <!-- Home shows only the dock_apps; every other app stays reachable in the App library (app_library), which
+         opens them with OK when library_ok_opens is on. A theme can set "dock_only": true. -->
+    <bool name="dock_only">false</bool>
+
+    <!-- A study timer button in the top bar: 25 minutes of work, 5 of rest, 15 after every fourth session, with
+         the time left on the button while it runs and the timer screen brought up when a phase ends. A theme
+         can set "pomodoro": true. -->
+    <bool name="pomodoro">false</bool>
     <!-- Draw the dock band and its edge. false leaves the tiles floating on the wallpaper (config.xml dock_band). -->
     <bool name="dock_band">true</bool>
     <!-- Every app in one row: the dock apps first, the rest after them, and the row scrolls sideways when focus
