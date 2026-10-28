@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -16,8 +18,14 @@ import android.graphics.drawable.LayerDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextClock;
+import android.widget.TextView;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -44,6 +52,7 @@ final class ClockScene {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Random random = new Random();
+    private final View root;
     private final View content;
     private final ImageView ambient;
     private final GradientDrawable glow;
@@ -80,6 +89,7 @@ final class ClockScene {
 
     /** root is the inflated dream_clock layout. */
     ClockScene(View root) {
+        this.root = root;
         content = root.findViewById(R.id.dreamContent);
         ambient = root.findViewById(R.id.dreamAmbient);
         glow = new GradientDrawable();
@@ -130,6 +140,7 @@ final class ClockScene {
             rotation = null;
             picture = true;
             motion = cfg.animations && !cfg.reducedMotion;
+            if ("editorial".equals(cfg.clockStyle)) editorial(ctx);
             wallpaperShade = (cfg.clockWallpaperDim * 255 / 100) << 24;
             wallpaperRes = ctx.getResources();
             return;
@@ -173,8 +184,10 @@ final class ClockScene {
         DisplayMetrics dm = res.getDisplayMetrics();
         int w = dm.widthPixels, h = dm.heightPixels;
         int generation = ++wallpaperGeneration;
+        boolean own = picture;
         new Thread(() -> {
-            Bitmap bmp = decode(file, w, h);
+            // The theme's own picture is decoded in full colour: RGB_565 bands and dulls an illustration.
+            Bitmap bmp = decode(file, w, h, own ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
             if (bmp == null) return;
             handler.post(() -> {
                 if (generation != wallpaperGeneration || wallpaperShown) {
@@ -185,11 +198,79 @@ final class ClockScene {
                 // As the image, not the background: a background is stretched to the view, so a picture of
                 // another shape than the screen would be distorted. centerCrop scales and crops it like Home.
                 ambient.setBackground(null);
-                ambient.setImageDrawable(new LayerDrawable(new Drawable[]{
-                        new BitmapDrawable(res, bmp), new ColorDrawable(shade)}));
+                if (own) {
+                    // Its colours a little richer, no overall darkening, and only a soft shade in the corner
+                    // where the clock sits, so the picture keeps its light and the time still reads.
+                    ColorMatrix rich = new ColorMatrix();
+                    rich.setSaturation(1.18f);
+                    ambient.setColorFilter(new ColorMatrixColorFilter(rich));
+                    GradientDrawable corner = new GradientDrawable();
+                    corner.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+                    corner.setGradientCenter(1f, 1f);
+                    corner.setGradientRadius(w * 0.55f);
+                    corner.setColors(new int[]{0x8C000000, 0x33000000, 0x00000000});
+                    ambient.setImageDrawable(new LayerDrawable(new Drawable[]{
+                            new BitmapDrawable(res, bmp), new ColorDrawable(shade), corner}));
+                } else {
+                    ambient.setImageDrawable(new LayerDrawable(new Drawable[]{
+                            new BitmapDrawable(res, bmp), new ColorDrawable(shade)}));
+                }
                 if (picture && motion) startDrift();
             });
         }, "clock-wallpaper").start();
+    }
+
+    /**
+     * clock_style "editorial", as on Home: the time in the lightest weight, a thin garnet-to-blue rule, and the date
+     * beside it on two lines, the weekday in gold small capitals over the day and month, all set to the right.
+     */
+    private void editorial(Context ctx) {
+        float d = ctx.getResources().getDisplayMetrics().density;
+        LinearLayout box = (LinearLayout) content;
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setGravity(Gravity.BOTTOM);
+        TextView time = root.findViewById(R.id.dreamClock);
+        time.setTypeface(UiFont.get(ctx, R.string.font_extralight));
+        time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 112);
+        time.setLetterSpacing(-0.02f);
+        root.findViewById(R.id.dreamDate).setVisibility(View.GONE);
+
+        View rule = new View(ctx);
+        GradientDrawable colours = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xFFC0175F, 0xFF2F7BEA});
+        colours.setCornerRadius(d);
+        rule.setBackground(colours);
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(Math.round(2 * d), Math.round(78 * d));
+        rl.setMargins(Math.round(26 * d), 0, Math.round(22 * d), Math.round(18 * d));
+        box.addView(rule, rl);
+
+        LinearLayout date = new LinearLayout(ctx);
+        date.setOrientation(LinearLayout.VERTICAL);
+        TextClock weekday = clockText(ctx, "EEEE", 16, R.string.font_medium, 0xF2EDBB00);
+        weekday.setLetterSpacing(0.3f);
+        weekday.setAllCaps(true);
+        date.addView(weekday);
+        TextClock day = clockText(ctx, "d MMMM", 30, R.string.font_light, 0xFFFFFFFF);
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        dl.topMargin = Math.round(10 * d);
+        date.addView(day, dl);
+        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        cl.bottomMargin = Math.round(20 * d);
+        box.addView(date, cl);
+    }
+
+    private static TextClock clockText(Context ctx, String format, float sp, int font, int colour) {
+        TextClock t = new TextClock(ctx);
+        t.setFormat12Hour(format);
+        t.setFormat24Hour(format);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        t.setTypeface(UiFont.get(ctx, font));
+        t.setTextColor(colour);
+        t.setIncludeFontPadding(false);
+        t.setShadowLayer(6, 0, 1, 0x40000000);
+        return t;
     }
 
     /**
@@ -208,7 +289,7 @@ final class ClockScene {
     }
 
     /** WallpaperPlayer's decode: sampled and scaled down to cover the screen, never bigger than 4K. */
-    private static Bitmap decode(File file, int screenW, int screenH) {
+    private static Bitmap decode(File file, int screenW, int screenH, Bitmap.Config config) {
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
@@ -225,7 +306,7 @@ final class ClockScene {
                 options.inDensity = scale[0];
                 options.inTargetDensity = scale[1];
             }
-            options.inPreferredConfig = Bitmap.Config.RGB_565;
+            options.inPreferredConfig = config;
             return BitmapFactory.decodeFile(file.getPath(), options);
         } catch (Exception | OutOfMemoryError failure) {
             return null;
@@ -266,6 +347,13 @@ final class ClockScene {
     /** A random spot that keeps the whole clock on screen, with the glow centred behind it. */
     private void placeClock() {
         View parent = (View) content.getParent();
+        if (picture) {
+            // A theme's picture: the clock keeps to the bottom right, shifting only a few pixels each minute.
+            float d = parent.getResources().getDisplayMetrics().density;
+            content.setX(parent.getWidth() - content.getWidth() - (64 + random.nextInt(10)) * d);
+            content.setY(parent.getHeight() - content.getHeight() - (48 + random.nextInt(10)) * d);
+            return;
+        }
         int maxX = Math.max(0, parent.getWidth() - content.getWidth());
         int maxY = Math.max(0, parent.getHeight() - content.getHeight());
         float x = maxX * (0.1f + 0.8f * random.nextFloat());

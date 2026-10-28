@@ -165,7 +165,9 @@ A new key needs one there in the same pull request.
 
 A `clock.jpg` beside `config.json` is the clock screensaver's own picture: it shows behind the clock (Home left
 idle for `home_idle_clock_minutes`, or the system screensaver set to the launcher's Clock) instead of Home's
-wallpaper, darkened by `clock_wallpaper_dim` and easing in slowly while animations are on. `tools/theme.sh` pushes
+wallpaper, decoded in full colour and a little richer, darkened by `clock_wallpaper_dim` and easing in slowly while
+animations are on. The clock then keeps to the bottom right over a soft shade, and `clock_style: editorial` sets it
+as on Home. `tools/theme.sh` pushes
 it with the theme and removes it when a theme has none.
 
 `wallpaper.jpg` is drawn full screen behind the launcher, centre-cropped. Keep it dark, 1920×1080 and
