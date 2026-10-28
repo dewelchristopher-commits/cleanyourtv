@@ -67,5 +67,7 @@
   "wallpaper_rotation_minutes": 10,
   "row_top": true,
   "dock_only": true,
-  "pomodoro": true
+  "pomodoro": true,
+  "show_network_pill": false,
+  "show_inputs_pill": false
 }

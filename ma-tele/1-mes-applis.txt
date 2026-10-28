@@ -1,0 +1,13 @@
+# Ma télé (TCL BeyondTV2, Android TV 9, AP06), lot 1 sur 3 : les applis que je n'utilise plus.
+# Tout est DÉSACTIVÉ, rien n'est désinstallé. Annuler : tools\restore.ps1 ma-tele\1-mes-applis.txt
+com.disney.disneyplus
+com.sfr.android.sfrsport
+com.fifa.plus.android
+be.rtbf.auvio
+deezer.android.tv
+com.mlbam.wwe_asb_app
+fr.anidn
+com.ionitech.airscreen                  # AirScreen ; Chromecast reste actif pour caster
+com.graymatrix.did                      # ZEE5, préinstallée
+com.eros.now                            # Eros Now, préinstallée
+com.google.android.music                # Google Play Musique, préinstallée

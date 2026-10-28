@@ -110,8 +110,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     static int COLUMNS = 4;
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
-    /** row_top: where the single row starts, under the header's clock and date. */
-    private static final float ROW_TOP_DP = 140;
+    /** row_top: where the single row starts, under the band of cards below the header's clock and date. */
+    private static final float ROW_TOP_DP = 246;
+    /** The pomodoro card's width, and the top of the band of cards (pomodoro, game_day with row_top). */
+    private static final float CARD_WIDTH_DP = 236, CARD_TOP_DP = 140;
     private static final long STATS_MS = 10_000L;
     /**
      * 2025-01-01. TVs without a clock battery boot at the epoch (08:00 in China) and keep it until network
@@ -417,7 +419,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (festive) updateWifiLabel();
             sky.update();
             wallpaperPlayer.update();
-            updatePomodoroButton();
+            if (pomodoroCard != null) pomodoroCard.refresh();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -535,16 +537,40 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         stats = findViewById(R.id.stats);
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
+        if (cfg.pomodoro) {
+            // A glass card at the right of the band between the clock and the row (row_top), or under the top
+            // buttons otherwise. Up from the row reaches it; Up from it reaches the top bar.
+            pomodoroCard = new PomodoroCard(this, new Pomodoro(this));
+            FrameLayout.LayoutParams card = new FrameLayout.LayoutParams((int) (CARD_WIDTH_DP * density),
+                    ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
+            card.topMargin = (int) (CARD_TOP_DP * density);
+            card.setMarginEnd((int) (56 * density));
+            root.addView(pomodoroCard, card);
+            pomodoroCard.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                    findViewById(R.id.btnSettings).requestFocus();
+                    return true;
+                }
+                return keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
+            });
+        }
         if (rowTop) {
-            // The row takes the room under the clock and the app's name the left under the row, so the panel moves
-            // to the bottom right, clear of both.
+            // The row sits lower to leave a band of cards under the clock: the game_day panel becomes a glass card
+            // at the band's right, beside the pomodoro card when there is one.
             FrameLayout.LayoutParams panel = (FrameLayout.LayoutParams) racePanel.getLayoutParams();
-            panel.gravity = Gravity.BOTTOM | Gravity.END;
-            panel.topMargin = 0;
+            panel.gravity = Gravity.TOP | Gravity.END;
+            panel.topMargin = (int) (CARD_TOP_DP * density);
             panel.setMarginStart(0);
-            panel.setMarginEnd((int) (60 * density));
-            panel.bottomMargin = (int) (48 * density);
+            panel.setMarginEnd((int) ((56 + (cfg.pomodoro ? CARD_WIDTH_DP + 16 : 0)) * density));
             racePanel.setLayoutParams(panel);
+            racePanel.setBackground(PomodoroCard.glass(this, false));
+            int pad = (int) (18 * density);
+            racePanel.setPadding(pad, (int) (15 * density), pad, (int) (15 * density));
         }
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
@@ -814,12 +840,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
-        btnPomodoro = findViewById(R.id.btnPomodoro);
-        if (cfg.pomodoro) {
-            pomodoro = new Pomodoro(this);
-            btnPomodoro.setVisibility(View.VISIBLE);
-            btnPomodoro.setOnClickListener(v -> startActivity(new Intent(this, PomodoroActivity.class)));
-        }
         addTopBarApps(cfg.topBarApps, cfg.launchActions);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
@@ -884,10 +904,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         btnLibraryTop.setOnKeyListener(pillKeys);
-        btnPomodoro.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnPomodoro, btnLibraryTop, btnSettings));
+            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
@@ -1076,7 +1095,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sky.update();
         wallpaperPlayer.start();
         if (floodlights != null) floodlights.start();
-        updatePomodoroButton();
+        if (pomodoroCard != null) pomodoroCard.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
             diya.start();
@@ -1248,6 +1267,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
         if (floodlights != null) floodlights.stop();
+        if (pomodoroCard != null) pomodoroCard.stop();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -2350,7 +2370,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (singleRow) {
             // One row: Up leaves for the top bar, Down has nowhere to go, and Left/Right walk the whole row,
             // stopping at its two ends (the default focus search scrolls the row to the next tile).
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return false;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                // pomodoro: the card between the row and the top bar comes first.
+                if (pomodoroCard != null) {
+                    pomodoroCard.requestFocus();
+                    return true;
+                }
+                return false;
+            }
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return true;
             boolean forward = rtlAppGrid ? keyCode == KeyEvent.KEYCODE_DPAD_LEFT : keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
             int last = adapter.focusablePosition(count - 1);
@@ -2909,34 +2936,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private ColorStateList wifiNoInternetTint, wifiOfflineTint;
     /** The app library button in the top bar (library_button). */
     private View btnLibraryTop;
-    /** pomodoro: the timer's button, and the timer it reads; null when off. */
-    private TextView btnPomodoro;
-    private Pomodoro pomodoro;
+    /** pomodoro: the timer's card on Home; null when off. */
+    private PomodoroCard pomodoroCard;
     /** The open library came from that button: closing it returns there instead of scrolling to the grid's end. */
     private boolean libraryFromTopBar;
     /** The open library came from the VPN pill (vpn_pill, no VPN app): closing it returns there while the pill still shows. */
     private boolean libraryFromVpnPill;
-
-    /** pomodoro: the time left in minutes on the button while a session or a break is under way, the icon alone otherwise. */
-    private void updatePomodoroButton() {
-        if (pomodoro == null) return;
-        long left = pomodoro.remaining(System.currentTimeMillis());
-        ViewGroup.LayoutParams lp = btnPomodoro.getLayoutParams();
-        if (pomodoro.active() && left > 0) {
-            long minutes = Math.max(1, (left + 59_999) / 60_000);
-            btnPomodoro.setText((pomodoro.phase() == Pomodoro.STUDY ? "" : "Pause \u00B7 ") + minutes + " min");
-            btnPomodoro.setCompoundDrawablePadding(Math.round(8 * density));
-            btnPomodoro.setPaddingRelative(Math.round(14 * density), 0, Math.round(16 * density), 0);
-            lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-        } else {
-            btnPomodoro.setText(null);
-            btnPomodoro.setCompoundDrawablePadding(0);
-            int pad = Math.round(10 * density);
-            btnPomodoro.setPaddingRelative(pad, 0, pad, 0);
-            lp.width = Math.round(42 * density);
-        }
-        btnPomodoro.setLayoutParams(lp);
-    }
 
     /** Turns a labelled top pill into the round TopButtonIcon shape: no text, the icon centred by even padding. */
     private void makeIconOnly(TextView pill) {

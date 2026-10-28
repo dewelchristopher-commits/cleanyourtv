@@ -1,0 +1,17 @@
+# Lot 2 sur 3 : les services TCL de pub, de statistiques et d'incitation, d'après
+# examples/tcl-beyondtv2-latin-america (même modèle, firmware AP08 ; ici AP06).
+# Annuler : tools\restore.ps1 ma-tele\2-tcl.txt
+# Laissés exprès : Live TV, HDMI et sources, télécommande et Bluetooth, clavier, réglages TCL, mises à jour,
+# Miracast et le lecteur USB (com.tcl.tv, tvinput, sourcemananger, autopair, tcl_bt_rcu_service,
+# keycustomfunctionservice, framework.custom, keyhelp, inputmethod.international, settings, versionUpdateApp,
+# rc.ota, miracast, MultiScreenInteraction_TV, ui_mediaCenter...).
+com.tcl.bi                              # statistiques (télémétrie)
+com.tcl.bootadservice                   # pub au démarrage (souvent déjà désactivée en usine)
+com.tcl.notereminder                    # peut se réactiver tout seul : ne pas relancer en boucle
+com.tcl.messagebox
+com.tcl.usercenter                      # peut se réactiver tout seul : ne pas relancer en boucle
+com.tcl.useragreement
+com.tcl.copydatatotv
+com.tcl.tvweishi
+com.tcl.appmarket2                      # boutique TCL
+com.tcl.esticker                        # si elle revient, enlève cette ligne

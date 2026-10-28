@@ -1,0 +1,14 @@
+# Lot 3 sur 3 : l'Assistant (choisi : non) et les extras Google inutiles ici. Chromecast reste actif.
+# Annuler : tools\restore.ps1 ma-tele\3-google.txt
+com.google.android.katniss              # Assistant Google / recherche vocale
+com.google.android.tv.assistant         # voyant micro de l'Assistant
+com.google.android.speech.pumpkin       # mot d'éveil hors ligne, inutile sans l'Assistant
+com.tcl.smartalexa                      # Alexa de TCL ; peut se réactiver toute seule
+com.google.android.tvrecommendations    # recommandations de l'ancien accueil
+com.google.android.videos               # Play Films et séries
+com.google.android.play.games
+com.google.android.backdrop             # économiseur d'écran Ambient (l'horloge du launcher le remplace)
+com.android.dreams.basic
+com.android.printspooler                # impression
+com.google.android.tts                  # synthèse vocale, sert seulement à l'accessibilité
+com.google.android.marvin.talkback      # lecteur d'écran ; à réactiver si quelqu'un en a besoin
