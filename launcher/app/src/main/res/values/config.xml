@@ -306,9 +306,9 @@
          opens them with OK when library_ok_opens is on. A theme can set "dock_only": true. -->
     <bool name="dock_only">false</bool>
 
-    <!-- A study timer as a glass card on Home: 25 minutes of work, 5 of rest, 15 after every fourth session. OK
-         starts or pauses it, holding OK opens the timer screen, which also comes up when a phase ends. A theme
-         can set "pomodoro": true. -->
+    <!-- A study timer as a card on Home: 25 or 50 minutes of focus, short and long breaks, the day's sessions and
+         focus time. OK starts or pauses it, holding OK opens the timer screen, which also comes up when a phase
+         ends. A theme can set "pomodoro": true. -->
     <bool name="pomodoro">false</bool>
     <!-- Draw the dock band and its edge. false leaves the tiles floating on the wallpaper (config.xml dock_band). -->
     <bool name="dock_band">true</bool>

@@ -111,7 +111,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
     /** The pomodoro card's width, and its top: the band between the clock and the row with row_top. */
-    private static final float CARD_WIDTH_DP = 270, CARD_TOP_DP = 140;
+    private static final float CARD_WIDTH_DP = 320, CARD_TOP_DP = 140;
     private static final long STATS_MS = 10_000L;
     /**
      * 2025-01-01. TVs without a clock battery boot at the epoch (08:00 in China) and keep it until network
@@ -538,13 +538,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cfg.pomodoro) {
             // A glass card at the right of the band between the clock and the row (row_top), or under the top
             // buttons otherwise. Up from the row reaches it; Up from it reaches the top bar.
-            pomodoroCard = new PomodoroCard(this, new Pomodoro(this), cfg.animations && !cfg.reducedMotion);
-            // Its breathing light first, so it sits under the card, 20dp larger all round.
-            FrameLayout.LayoutParams halo = new FrameLayout.LayoutParams((int) ((CARD_WIDTH_DP + 40) * density),
-                    (int) (136 * density), Gravity.TOP | Gravity.END);
-            halo.topMargin = (int) ((CARD_TOP_DP - 20) * density);
-            halo.setMarginEnd((int) (36 * density));
-            root.addView(pomodoroCard.halo(), halo);
+            pomodoroCard = new PomodoroCard(this, Pomodoro.get(this), cfg.animations && !cfg.reducedMotion);
             FrameLayout.LayoutParams card = new FrameLayout.LayoutParams((int) (CARD_WIDTH_DP * density),
                     ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
             card.topMargin = (int) (CARD_TOP_DP * density);

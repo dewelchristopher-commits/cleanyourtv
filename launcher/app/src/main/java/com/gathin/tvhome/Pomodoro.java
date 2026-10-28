@@ -6,109 +6,161 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.SystemClock;
+import android.provider.Settings;
 
 import java.time.LocalDate;
 
 /**
- * pomodoro (config.xml or a theme): a study timer, 25 minutes of work, then 5 of rest, and 15 after every fourth
- * session. The state lives in preferences so Home's pill and the timer screen agree, and the end of each phase is
- * an alarm that brings the timer screen up over whatever is playing. A break starts by itself; the next session
- * waits for OK, so a TV left alone does not cycle all night.
+ * pomodoro (config.xml or a theme): the study timer that Home's card and the timer screen share, one per process.
+ * PomodoroEngine holds the rules; this keeps them on the monotonic clock, saves them after every change, and sets an
+ * alarm for the end of each phase that brings the timer screen up over whatever is playing.
+ *
+ * elapsedRealtime restarts at a reboot, so the end is also saved as a wall-clock time with the boot count: after a
+ * reboot a phase under way is carried over by the wall clock, the one reference that survived.
  */
 final class Pomodoro {
-    static final int STUDY = 0, SHORT_BREAK = 1, LONG_BREAK = 2;
-    static final int SESSIONS_PER_CYCLE = 4;
+    static final int FOCUS = PomodoroEngine.FOCUS, SHORT_BREAK = PomodoroEngine.SHORT_BREAK,
+            LONG_BREAK = PomodoroEngine.LONG_BREAK;
     static final String EXTRA_TIME_UP = "com.gathin.tvhome.POMODORO_TIME_UP";
-    private static final long MINUTE = 60_000L;
+
+    private static Pomodoro instance;
 
     private final Context ctx;
     private final SharedPreferences prefs;
+    private final PomodoroEngine e = new PomodoroEngine();
+    private String day;
 
-    Pomodoro(Context ctx) {
-        this.ctx = ctx.getApplicationContext();
-        prefs = this.ctx.getSharedPreferences("pomodoro", Context.MODE_PRIVATE);
+    static synchronized Pomodoro get(Context c) {
+        if (instance == null) instance = new Pomodoro(c.getApplicationContext());
+        return instance;
     }
 
-    static long length(int phase) {
-        return (phase == STUDY ? 25 : phase == SHORT_BREAK ? 5 : 15) * MINUTE;
+    private Pomodoro(Context ctx) {
+        this.ctx = ctx;
+        prefs = ctx.getSharedPreferences("pomodoro2", Context.MODE_PRIVATE);
+        load();
     }
 
-    int phase() {
-        return prefs.getInt("phase", STUDY);
+    static long now() {
+        return SystemClock.elapsedRealtime();
     }
 
-    boolean running() {
-        return prefs.getBoolean("running", false);
+    // ---- reading ---------------------------------------------------------------------------------
+
+    int phase() { return e.phase; }
+    boolean running() { return e.running; }
+    boolean fresh() { return e.fresh(); }
+    boolean deep() { return e.durations == PomodoroEngine.DEEP; }
+    long length(int phase) { return e.length(phase); }
+    long remaining() { return e.remaining(now()); }
+    float progress() { return e.progress(now()); }
+    int doneInCycle() { return e.doneInCycle; }
+    int cycle() { return e.durations.cycle; }
+
+    int sessionsToday() {
+        rollDay();
+        return e.sessionsToday;
     }
 
-    /** Sessions finished in the current cycle of four, 0 to 3. */
-    int doneInCycle() {
-        return prefs.getInt("cycle", 0);
+    long focusToday() {
+        rollDay();
+        return e.focusToday(now());
     }
 
-    /** Sessions finished today. */
-    int doneToday() {
-        return LocalDate.now().toString().equals(prefs.getString("day", "")) ? prefs.getInt("today", 0) : 0;
+    /** The wall-clock time the phase under way ends, for "Fin à 21:45". */
+    long endsAtWall() {
+        return System.currentTimeMillis() + e.remaining(now());
     }
 
-    long remaining(long now) {
-        long left = running() ? prefs.getLong("end", now) - now : prefs.getLong("left", length(phase()));
-        return Math.max(0, left);
+    // ---- changing --------------------------------------------------------------------------------
+
+    void start() { e.start(now()); changed(); }
+    void pause() { e.pause(now()); changed(); }
+    void reset() { e.reset(now()); changed(); }
+    void skip() { e.skip(now()); changed(); }
+
+    void toggle() {
+        if (e.running) pause();
+        else start();
     }
 
-    /** True while a session or a break is under way or paused part-way, so Home shows the pill's time. */
-    boolean active() {
-        return running() || prefs.getLong("left", length(phase())) < length(phase());
+    /** 50-minute sessions instead of 25; only while nothing runs. */
+    void setDeep(boolean deep) {
+        if (e.running) return;
+        e.setDurations(deep ? PomodoroEngine.DEEP : PomodoroEngine.CLASSIC);
+        changed();
     }
 
-    void start(long now) {
-        if (running()) return;
-        long end = now + remaining(now);
-        prefs.edit().putBoolean("running", true).putLong("end", end).apply();
-        schedule(end);
+    /** Finishes the phases that ran out (the alarm, or a screen opened late). True when the phase changed. */
+    boolean catchUp() {
+        rollDay();
+        if (!e.advance(now())) return false;
+        changed();
+        return true;
     }
 
-    void pause(long now) {
-        if (!running()) return;
-        prefs.edit().putBoolean("running", false).putLong("left", remaining(now)).apply();
-        cancel();
-    }
-
-    void reset() {
-        cancel();
-        prefs.edit().putInt("phase", STUDY).putBoolean("running", false).putLong("left", length(STUDY))
-                .putInt("cycle", 0).apply();
-    }
-
-    /** Ends the phase on screen now (the alarm, or Skip): a finished session counts, and the next phase is set. */
-    void finish(long now, boolean counted) {
-        cancel();
-        int phase = phase();
-        SharedPreferences.Editor e = prefs.edit();
-        if (phase == STUDY) {
-            int cycle = doneInCycle() + (counted ? 1 : 0);
-            if (counted) {
-                e.putString("day", LocalDate.now().toString()).putInt("today", doneToday() + 1);
-            }
-            int next = cycle >= SESSIONS_PER_CYCLE ? LONG_BREAK : SHORT_BREAK;
-            e.putInt("cycle", cycle % SESSIONS_PER_CYCLE).putInt("phase", next);
-            // The break starts by itself.
-            long end = now + length(next);
-            e.putBoolean("running", true).putLong("end", end).putLong("left", length(next)).apply();
-            schedule(end);
-        } else {
-            e.putInt("phase", STUDY).putBoolean("running", false).putLong("left", length(STUDY)).apply();
+    private void rollDay() {
+        String today = LocalDate.now().toString();
+        if (!today.equals(day)) {
+            if (day != null) e.newDay(now());
+            day = today;
+            save();
         }
     }
 
-    /** The alarm went off, or the screen opened after it should have: finish the phase once. */
-    boolean catchUp(long now) {
-        if (running() && prefs.getLong("end", Long.MAX_VALUE) <= now) {
-            finish(now, true);
-            return true;
-        }
-        return false;
+    private void changed() {
+        save();
+        schedule();
     }
+
+    // ---- saving ----------------------------------------------------------------------------------
+
+    private int bootCount() {
+        return Settings.Global.getInt(ctx.getContentResolver(), Settings.Global.BOOT_COUNT, -1);
+    }
+
+    private void save() {
+        long now = now();
+        prefs.edit()
+                .putBoolean("deep", deep())
+                .putInt("phase", e.phase)
+                .putBoolean("running", e.running)
+                .putLong("end", e.endAt)
+                .putLong("end_wall", System.currentTimeMillis() + (e.endAt - now))
+                .putLong("left", e.left)
+                .putLong("run_from", e.runFrom)
+                .putInt("cycle_done", e.doneInCycle)
+                .putInt("sessions", e.sessionsToday)
+                .putLong("focus", e.focusToday)
+                .putString("day", day)
+                .putInt("boot", bootCount())
+                .apply();
+    }
+
+    private void load() {
+        e.setDurations(prefs.getBoolean("deep", false) ? PomodoroEngine.DEEP : PomodoroEngine.CLASSIC);
+        e.phase = prefs.getInt("phase", FOCUS);
+        e.running = prefs.getBoolean("running", false);
+        e.left = prefs.getLong("left", e.length(e.phase));
+        e.endAt = prefs.getLong("end", 0);
+        e.runFrom = prefs.getLong("run_from", 0);
+        e.doneInCycle = prefs.getInt("cycle_done", 0);
+        e.sessionsToday = prefs.getInt("sessions", 0);
+        e.focusToday = prefs.getLong("focus", 0);
+        day = prefs.getString("day", null);
+        if (e.running && prefs.getInt("boot", -1) != bootCount()) {
+            // A reboot reset the monotonic clock: place the end again by the wall clock.
+            long now = now();
+            e.endAt = now + Math.max(0, prefs.getLong("end_wall", 0) - System.currentTimeMillis());
+            e.runFrom = now;
+        }
+        rollDay();
+        // After a reboot the alarm is gone with the rest; set it again for the phase that carried over.
+        if (!catchUp()) schedule();
+    }
+
+    // ---- the end-of-phase alarm ------------------------------------------------------------------
 
     private PendingIntent alarmIntent() {
         Intent i = new Intent(ctx, PomodoroActivity.class).putExtra(EXTRA_TIME_UP, true)
@@ -116,25 +168,37 @@ final class Pomodoro {
         return PendingIntent.getActivity(ctx, 7, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private void schedule(long at) {
+    /**
+     * One alarm for the end of the phase under way, on the same monotonic clock, and not a wake-up one: a TV in
+     * standby is left asleep, and the screen catches up when it is switched on.
+     */
+    private void schedule() {
         AlarmManager am = ctx.getSystemService(AlarmManager.class);
         if (am == null) return;
-        // Exact where the system allows it without asking (every TV before Android 12, and 12+ once granted).
+        am.cancel(alarmIntent());
+        if (!e.running) return;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, alarmIntent());
+            am.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME, e.endAt, alarmIntent());
         } else {
-            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, alarmIntent());
+            am.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME, e.endAt, alarmIntent());
         }
     }
 
-    private void cancel() {
-        AlarmManager am = ctx.getSystemService(AlarmManager.class);
-        if (am != null) am.cancel(alarmIntent());
-    }
+    // ---- words -----------------------------------------------------------------------------------
 
     /** "18:42". */
     static String clock(long ms) {
         long s = (ms + 999) / 1000;
         return String.format(java.util.Locale.ROOT, "%02d:%02d", s / 60, s % 60);
+    }
+
+    /** "1 h 15 min", "40 min", "0 min". */
+    static String duration(long ms) {
+        long m = ms / 60_000L;
+        return m >= 60 ? (m / 60) + " h " + String.format(java.util.Locale.ROOT, "%02d", m % 60) : m + " min";
+    }
+
+    static String phaseName(int phase) {
+        return phase == FOCUS ? "Concentration" : phase == SHORT_BREAK ? "Pause courte" : "Pause longue";
     }
 }

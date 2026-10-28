@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pomodoro screen: back to a fresh session. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp" android:height="22dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="2.2"
+        android:strokeLineCap="round" android:pathData="M5.5,12a6.5,6.5 0,1 0,2 -4.7" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M4,4.2v5.3c0,0.4 0.3,0.7 0.7,0.7h5.3c0.6,0 0.9,-0.7 0.5,-1.2l-5.3,-5.3C4.7,3.3 4,3.6 4,4.2z" />
+</vector>
