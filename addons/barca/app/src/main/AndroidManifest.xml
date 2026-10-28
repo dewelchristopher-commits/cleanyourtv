@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!-- Only to read FC Barcelona's matches and the LaLiga table from football-data.org, with the owner's key. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="false"
+        android:banner="@drawable/banner"
+        android:icon="@drawable/icon"
+        android:label="@string/app_name"
+        android:supportsRtl="false"
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="true"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Clean Your TV launcher, game_day (docs/modules.md): where Home reads Barça's next games. -->
+        <meta-data android:name="com.gathin.tvhome.games" android:value="io.github.dewelchristopher.barca.games" />
+
+        <!-- Read-only: what Home shows anyway. It never returns the key. -->
+        <provider
+            android:name=".GamesProvider"
+            android:authorities="io.github.dewelchristopher.barca.games"
+            android:exported="true" />
+
+        <!-- Where the key arrives from the computer. WRITE_SECURE_SETTINGS is held by the ADB shell only. -->
+        <receiver
+            android:name=".KeyReceiver"
+            android:exported="true"
+            android:permission="android.permission.WRITE_SECURE_SETTINGS">
+            <intent-filter>
+                <action android:name="io.github.dewelchristopher.barca.SET_KEY" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

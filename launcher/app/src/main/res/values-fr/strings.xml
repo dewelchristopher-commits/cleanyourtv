@@ -95,4 +95,8 @@
     <string name="greeting_with_name">%1$s, %2$s</string>
     <string name="last_opened">Dernière ouverture : %1$s</string>
     <string name="game_live">En direct</string>
+    <string name="race_next">%1$s dans %2$s</string>
+    <string name="race_countdown_minutes">%1$d min</string>
+    <string name="race_countdown_hours">%1$d h %2$d min</string>
+    <string name="race_countdown_days">%1$d j %2$d h</string>
 </resources>

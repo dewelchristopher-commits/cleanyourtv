@@ -221,6 +221,8 @@ final class Config {
     final boolean floodlights;
     /** A slow zoom and pan of the wallpaper while Home is visible (config.xml, wallpaper_drift); off by default. */
     final boolean wallpaperDrift;
+    /** With single_row, the row sits near the top under the clock and the app's name below it (config.xml, row_top). */
+    final boolean rowTop;
     /** The dock band's padding equals the gap between its tiles (config.xml, dock_even_padding); false keeps the fixed padding. */
     final boolean dockEvenPadding;
     /** The dock band and its edge draw (dock_band); false leaves the tiles floating on the wallpaper. */
@@ -283,7 +285,8 @@ final class Config {
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
                    Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean homeLongPressHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, boolean vpnPill, String locale, boolean powerOnHomeAlways, boolean inputsConnectedOnly,
-                   int openOnStartNetworkWait, boolean floodlights, boolean wallpaperDrift) {
+                   int openOnStartNetworkWait, boolean floodlights, boolean wallpaperDrift, boolean rowTop) {
+        this.rowTop = rowTop;
         this.floodlights = floodlights;
         this.wallpaperDrift = wallpaperDrift;
         this.handleViewInputs = handleViewInputs;
@@ -476,6 +479,7 @@ final class Config {
         boolean uniformTiles = res.getBoolean(R.bool.uniform_tiles);
         boolean floodlights = res.getBoolean(R.bool.floodlights);
         boolean wallpaperDrift = res.getBoolean(R.bool.wallpaper_drift);
+        boolean rowTop = res.getBoolean(R.bool.row_top);
         int background = 0xFF000000;
         int skyIntensity = res.getInteger(R.integer.sky_intensity);
         int[] settingsKeycodes = res.getIntArray(R.array.settings_key_keycodes);
@@ -608,6 +612,7 @@ final class Config {
             dockGlass = bool(json, "dock_glass", dockGlass);
             floodlights = bool(json, "floodlights", floodlights);
             wallpaperDrift = bool(json, "wallpaper_drift", wallpaperDrift);
+            rowTop = bool(json, "row_top", rowTop);
             dockEvenPadding = bool(json, "dock_even_padding", dockEvenPadding);
             dockBand = bool(json, "dock_band", dockBand);
             cinematicDots = bool(json, "cinematic_dots", cinematicDots);
@@ -692,7 +697,7 @@ final class Config {
                 consumeVolumeKeys, powerOnHome, homeLongPressHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
                 dateBelowClock, vpnPill, locale, powerOnHomeAlways, inputsConnectedOnly,
-                Math.max(0, Math.min(600, openOnStartNetworkWait)), floodlights, wallpaperDrift);
+                Math.max(0, Math.min(600, openOnStartNetworkWait)), floodlights, wallpaperDrift, rowTop && singleRow && dockRow);
     }
 
     /**

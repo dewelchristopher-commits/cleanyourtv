@@ -4,14 +4,16 @@
     "com.netflix.ninja",
     "com.nst.iptvsmarterstvbox",
     "com.spotify.tv.android",
-    "tv.twitch.android.app"
+    "tv.twitch.android.app",
+    "io.github.dewelchristopher.barca"
   ],
   "app_labels": [
     "com.sfr.android.sfrsport=SFR Sport",
     "com.fifa.plus.android=FIFA+",
     "be.rtbf.auvio=Auvio",
     "com.nst.iptvsmarterstvbox=IPTV",
-    "com.mlbam.wwe_asb_app=WWE"
+    "com.mlbam.wwe_asb_app=WWE",
+    "io.github.dewelchristopher.barca=Barça"
   ],
   "top_bar_apps": [],
   "columns": 7,
@@ -31,7 +33,7 @@
   "greeting_name": "Chris",
   "app_library": true,
   "library_button": true,
-  "game_day": "io.github.justinnewman.gameday",
+  "game_day": "io.github.dewelchristopher.barca",
   "cinematic_art": 0,
   "cinematic_scrim": 30,
   "ambient_glow": false,
@@ -61,5 +63,6 @@
   "floodlights": false,
   "wallpaper_true_color": true,
   "wallpaper_drift": true,
-  "wallpaper_rotation_minutes": 10
+  "wallpaper_rotation_minutes": 10,
+  "row_top": true
 }

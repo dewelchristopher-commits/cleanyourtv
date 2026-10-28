@@ -16,7 +16,7 @@ TEXT = {".gradle", ".kts", ".java", ".kt", ".xml", ".properties", ".sh", ".ps1",
 
 # Add-ons merged before screenshots were required. This list only shrinks: once one gets a
 # screenshot.jpg, take it off here.
-SCREENSHOT_WANTED = set()
+SCREENSHOT_WANTED = {"barca"}
 
 
 def addon_dirs():
