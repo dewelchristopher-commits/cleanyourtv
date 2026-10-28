@@ -1,5 +1,8 @@
 package com.gathin.tvhome;
 
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -12,6 +15,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -61,6 +65,8 @@ final class WallpaperPlayer {
     private final String latitude, longitude;
     private LocalDate sunDay;
     private int[] sun;
+    /** wallpaper_drift: a slow zoom and pan of the picture while Home is visible; null when off or motion is reduced. */
+    private ObjectAnimator drift;
 
     WallpaperPlayer(Context context, FrameLayout root, Config config) {
         this.root = root;
@@ -95,7 +101,26 @@ final class WallpaperPlayer {
             root.addView(image, 0, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             showFirst();
+            if (config.wallpaperDrift && config.animations && !config.reducedMotion) drift = makeDrift();
         }
+    }
+
+    /**
+     * The picture's view scales and pans as RenderNode properties, so each frame draws the same texture with a new
+     * transform and decodes or rasterises nothing. It never scales below 1.06, so the pan never shows an edge.
+     */
+    private ObjectAnimator makeDrift() {
+        float pan = width * 0.025f;
+        ObjectAnimator a = ObjectAnimator.ofPropertyValuesHolder(image,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 1.06f, 1.14f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 1.06f, 1.14f),
+                PropertyValuesHolder.ofFloat(View.TRANSLATION_X, -pan, pan),
+                PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, pan * 0.3f, -pan * 0.3f));
+        a.setDuration(40_000L);
+        a.setRepeatCount(ValueAnimator.INFINITE);
+        a.setRepeatMode(ValueAnimator.REVERSE);
+        a.setInterpolator(new AccelerateDecelerateInterpolator());
+        return a;
     }
 
     /**
@@ -131,10 +156,15 @@ final class WallpaperPlayer {
     void start() {
         active = true;
         update();
+        if (drift != null) {
+            if (drift.isPaused()) drift.resume();
+            else if (!drift.isStarted()) drift.start();
+        }
     }
 
     void stop() {
         active = false;
+        if (drift != null) drift.pause();
     }
 
     /** Drops the wallpaper texture when Home is hidden and Android asks the process to free memory. */
@@ -162,6 +192,7 @@ final class WallpaperPlayer {
     void close() {
         active = false;
         closed = true;
+        if (drift != null) drift.cancel();
         decoder.shutdownNow();
     }
 

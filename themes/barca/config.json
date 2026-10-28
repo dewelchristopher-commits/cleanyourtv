@@ -58,6 +58,8 @@
   "dock_title": true,
   "cinematic_dots": false,
   "cinematic_white_focus": true,
-  "floodlights": true,
-  "wallpaper_true_color": true
+  "floodlights": false,
+  "wallpaper_true_color": true,
+  "wallpaper_drift": true,
+  "wallpaper_rotation_minutes": 10
 }
