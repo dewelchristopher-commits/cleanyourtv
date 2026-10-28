@@ -22,16 +22,19 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The full Barça dashboard: the next game with its countdown, the games after it, the last five results and the
- * LaLiga table around Barça. Built once per data change from plain views and flat shapes, so it costs the TV's GPU
- * nothing per frame; only the countdown's text changes, every 30 seconds.
+ * The full Barça dashboard on one 16:9 screen, in two columns that always fit: the next game and the form on the
+ * left, the LaLiga table and the games after it on the right. Built once per data change from plain views and flat
+ * shapes, so it costs the TV's GPU nothing per frame; only the countdown's text changes, every 30 seconds.
  */
 public final class DashboardActivity extends Activity {
     private static final int GOLD = 0xFFEDBB00, GARNET = 0xFFA50044, BLUE = 0xFF004D98;
-    private static final int TEXT = 0xFFFFFFFF, DIM = 0xB3FFFFFF, FAINT = 0x80FFFFFF;
+    private static final int TEXT = 0xFFFFFFFF, DIM = 0xB3FFFFFF, FAINT = 0x73FFFFFF;
+    private static final int CARD = 0x1AFFFFFF, LINE = 0x14FFFFFF;
+    private static final int WIN = 0xFF1E9E5A, DRAW = 0xFF6B7280, LOSS = 0xFFC81E3A;
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH);
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm", Locale.FRENCH);
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("EEE d MMM · HH:mm", Locale.FRENCH);
+    private static final DateTimeFormatter TINY = DateTimeFormatter.ofPattern("d/MM", Locale.FRENCH);
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Store store;
@@ -56,9 +59,8 @@ public final class DashboardActivity extends Activity {
         dp = getResources().getDisplayMetrics().density;
         store = new Store(this);
         root = new FrameLayout(this);
-        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[] {0xFF0A1A44, 0xFF14123A, 0xFF3A0A26});
-        root.setBackground(bg);
+        root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[] {0xFF081634, 0xFF0F1030, 0xFF2A0820}));
         setContentView(root);
     }
 
@@ -88,106 +90,133 @@ public final class DashboardActivity extends Activity {
     private void build() {
         root.removeAllViews();
         LinearLayout page = vertical();
-        page.setPadding(px(48), px(32), px(48), px(24));
+        page.setPadding(px(44), px(26), px(44), px(18));
         root.addView(page, new FrameLayout.LayoutParams(-1, -1));
 
-        // Header: the club in gold, the page's name, and how fresh the data is.
+        // Header: one line, the club in gold, the page's name, and how fresh the data is.
         LinearLayout header = horizontal();
-        header.setGravity(Gravity.BOTTOM);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        View mark = new View(this);
+        mark.setBackground(stripes());
+        header.addView(mark, lp(px(6), px(30), 0, 0, px(14), 0));
         LinearLayout titles = vertical();
-        titles.addView(text("FC BARCELONA", 13, GOLD, true, 0.3f));
-        TextView title = text("Tableau de bord", 34, TEXT, false, -0.01f);
-        title.setPadding(0, px(4), 0, 0);
+        titles.addView(text("FC BARCELONA", 11, GOLD, true, 0.3f));
+        TextView title = text("Tableau de bord", 24, TEXT, true, -0.01f);
+        title.setPadding(0, px(3), 0, 0);
         titles.addView(title);
         header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
-        updated = text(freshness(), 12, FAINT, false, 0.05f);
-        updated.setGravity(Gravity.END);
+        updated = text(freshness(), 11, FAINT, false, 0.04f);
         header.addView(updated);
         page.addView(header);
-        page.addView(stripe(), lp(-1, px(3), 0, px(14), 0, px(18)));
 
         if (!store.hasKey()) {
-            page.addView(card(noKey()), lp(-1, -2, 0, 0, 0, 0));
+            page.addView(card(noKey()), lp(-1, -2, 0, px(20), 0, 0));
             return;
         }
 
         LinearLayout columns = horizontal();
-        page.addView(columns, new LinearLayout.LayoutParams(-1, 0, 1));
+        page.addView(columns, lp(-1, 0, 0, px(18), 0, 0));
+        ((LinearLayout.LayoutParams) columns.getLayoutParams()).weight = 1;
         LinearLayout left = vertical();
-        columns.addView(left, new LinearLayout.LayoutParams(0, -1, 1.15f));
+        columns.addView(left, new LinearLayout.LayoutParams(0, -1, 1.1f));
         LinearLayout right = vertical();
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, -1, 1f);
-        rp.leftMargin = px(24);
-        columns.addView(right, rp);
+        columns.addView(right, lp(0, -1, px(18), 0, 0, 0));
+        ((LinearLayout.LayoutParams) right.getLayoutParams()).weight = 1f;
 
         long now = System.currentTimeMillis();
         List<Store.Match> next = store.upcoming(now);
-        left.addView(card(nextGame(next.isEmpty() ? null : next.get(0))), new LinearLayout.LayoutParams(-1, -2));
-        if (next.size() > 1) left.addView(card(later(next.subList(1, Math.min(3, next.size())))), lp(-1, -2, 0, px(16), 0, 0));
-        left.addView(card(form(store.lastResults(5))), lp(-1, -2, 0, px(16), 0, 0));
-        right.addView(card(table(store.table())), new LinearLayout.LayoutParams(-1, -2));
+        // Left: the next game takes the room the form leaves; right: the table does, over the games after.
+        left.addView(card(nextGame(next.isEmpty() ? null : next.get(0))), new LinearLayout.LayoutParams(-1, 0, 1));
+        left.addView(card(form(store.lastResults(5))), lp(-1, -2, 0, px(14), 0, 0));
+        right.addView(card(table(store.table())), new LinearLayout.LayoutParams(-1, 0, 1));
+        if (next.size() > 1) right.addView(card(later(next.subList(1, Math.min(3, next.size())))), lp(-1, -2, 0, px(14), 0, 0));
 
-        TextView source = text("Données : football-data.org", 10, FAINT, false, 0.05f);
+        TextView source = text("Données football-data.org", 9, FAINT, false, 0.05f);
         source.setGravity(Gravity.END);
-        page.addView(source, lp(-1, -2, 0, px(10), 0, 0));
+        page.addView(source, lp(-1, -2, 0, px(8), 0, 0));
     }
 
     private View nextGame(Store.Match m) {
         LinearLayout box = vertical();
-        box.addView(kicker(m == null ? "PROCHAIN MATCH" : "PROCHAIN MATCH · " + m.competition.toUpperCase(Locale.FRENCH)
-                + (m.matchday > 0 && "LaLiga".equals(m.competition) ? " · J" + m.matchday : "")));
+        box.addView(kicker("PROCHAIN MATCH"));
         shownNext = m;
         if (m == null) {
-            box.addView(text("Aucun match prévu pour l'instant.", 18, DIM, false, 0));
             countdown = null;
+            box.addView(text("Aucun match prévu pour l'instant.", 16, DIM, false, 0));
             return box;
         }
+        String meta = m.competition + (m.matchday > 0 && "LaLiga".equals(m.competition) ? " · Journée " + m.matchday : "");
+        box.addView(text(meta, 12, DIM, false, 0.02f));
+
+        // The two sides with their badges, centred in the card's free height.
         LinearLayout teams = horizontal();
-        teams.setGravity(Gravity.CENTER_VERTICAL);
-        teams.setPadding(0, px(10), 0, px(6));
+        teams.setGravity(Gravity.CENTER);
         String homeName = m.home ? "Barça" : m.opponent, awayName = m.home ? m.opponent : "Barça";
-        teams.addView(team(homeName, m.home), new LinearLayout.LayoutParams(0, -2, 1));
-        TextView vs = text("VS", 16, GOLD, true, 0.2f);
-        vs.setPadding(px(18), 0, px(18), 0);
-        teams.addView(vs);
-        TextView away = team(awayName, !m.home);
-        away.setGravity(Gravity.END);
-        teams.addView(away, new LinearLayout.LayoutParams(0, -2, 1));
-        box.addView(teams);
+        teams.addView(side(homeName, m.home), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView vs = text("VS", 13, GOLD, true, 0.25f);
+        vs.setGravity(Gravity.CENTER);
+        teams.addView(vs, new LinearLayout.LayoutParams(px(52), -2));
+        teams.addView(side(awayName, !m.home), new LinearLayout.LayoutParams(0, -2, 1));
+        box.addView(teams, new LinearLayout.LayoutParams(-1, 0, 1));
+        ((LinearLayout.LayoutParams) teams.getLayoutParams()).gravity = Gravity.CENTER;
+
+        box.addView(divider(), lp(-1, 1, 0, 0, 0, px(10)));
+        LinearLayout foot = horizontal();
+        foot.setGravity(Gravity.CENTER_VERTICAL);
         ZoneId zone = ZoneId.systemDefault();
         Instant start = Instant.ofEpochMilli(m.startMs);
-        String when = capitalise(DAY.format(start.atZone(zone))) + " · " + TIME.format(start.atZone(zone))
-                + (m.home ? " · à domicile" : " · à l'extérieur");
-        box.addView(text(when, 15, DIM, false, 0));
-        countdown = text("", 22, TEXT, true, 0);
-        countdown.setPadding(0, px(10), 0, 0);
-        box.addView(countdown);
+        LinearLayout when = vertical();
+        when.addView(text(capitalise(DAY.format(start.atZone(zone))), 14, TEXT, true, 0));
+        TextView where = text(TIME.format(start.atZone(zone)) + (m.home ? " · à domicile" : " · à l'extérieur"), 12, DIM, false, 0);
+        where.setPadding(0, px(3), 0, 0);
+        when.addView(where);
+        foot.addView(when, new LinearLayout.LayoutParams(0, -2, 1));
+        countdown = text("", 14, TEXT, true, 0);
+        countdown.setPadding(px(12), px(6), px(12), px(6));
+        foot.addView(countdown);
+        box.addView(foot);
         updateCountdown();
         return box;
     }
 
-    private TextView team(String name, boolean barca) {
-        TextView t = text(name, 30, barca ? GOLD : TEXT, true, -0.01f);
-        t.setSingleLine(true);
-        t.setEllipsize(TextUtils.TruncateAt.END);
-        return t;
+    /** A badge with the club's first letters over its name: Barça's in blaugrana, the opponent's in grey. */
+    private View side(String name, boolean barca) {
+        LinearLayout s = vertical();
+        s.setGravity(Gravity.CENTER_HORIZONTAL);
+        TextView badge = text(barca ? "FCB" : initials(name), 15, barca ? GOLD : TEXT, true, 0.04f);
+        badge.setGravity(Gravity.CENTER);
+        GradientDrawable circle = barca
+                ? new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {BLUE, GARNET})
+                : new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        if (!barca) circle.setColor(0x33FFFFFF);
+        badge.setBackground(circle);
+        s.addView(badge, new LinearLayout.LayoutParams(px(58), px(58)));
+        TextView label = text(name, 18, barca ? GOLD : TEXT, true, -0.01f);
+        label.setSingleLine(true);
+        label.setEllipsize(TextUtils.TruncateAt.END);
+        label.setGravity(Gravity.CENTER);
+        s.addView(label, lp(-1, -2, 0, px(8), 0, 0));
+        return s;
     }
 
     private void updateCountdown() {
+        if (updated != null) updated.setText(freshness());
         if (countdown == null || shownNext == null) return;
-        long now = System.currentTimeMillis();
-        long left = shownNext.startMs - now;
+        long left = shownNext.startMs - System.currentTimeMillis();
         if (shownNext.live() || (left <= 0 && left > -Store.GAME_MS)) {
             countdown.setText("● En direct");
-            countdown.setTextColor(0xFFFF4D5E);
+            countdown.setBackground(rounded(0x33FF4D5E, px(14)));
+            countdown.setTextColor(0xFFFF6B79);
         } else if (left > 0) {
-            countdown.setText("Coup d'envoi dans " + duration(left));
-            countdown.setTextColor(TEXT);
+            countdown.setText("Dans " + duration(left));
+            countdown.setBackground(rounded(0x26EDBB00, px(14)));
+            countdown.setTextColor(GOLD);
         } else {
-            countdown.setText("Terminé, résultat à venir");
+            countdown.setText("Terminé");
+            countdown.setBackground(rounded(CARD, px(14)));
             countdown.setTextColor(DIM);
         }
-        if (updated != null) updated.setText(freshness());
     }
 
     private View later(List<Store.Match> games) {
@@ -196,40 +225,52 @@ public final class DashboardActivity extends Activity {
         ZoneId zone = ZoneId.systemDefault();
         for (Store.Match m : games) {
             LinearLayout row = horizontal();
-            row.setPadding(0, px(6), 0, 0);
-            TextView date = text(capitalise(SHORT.format(Instant.ofEpochMilli(m.startMs).atZone(zone))), 13, DIM, false, 0);
-            row.addView(date, new LinearLayout.LayoutParams(px(170), -2));
-            TextView fixture = text(m.fixture(), 15, TEXT, false, 0);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(0, px(5), 0, 0);
+            row.addView(text(capitalise(SHORT.format(Instant.ofEpochMilli(m.startMs).atZone(zone))), 12, DIM, false, 0),
+                    new LinearLayout.LayoutParams(px(150), -2));
+            TextView fixture = text(m.fixture(), 13, TEXT, true, 0);
             fixture.setSingleLine(true);
             fixture.setEllipsize(TextUtils.TruncateAt.END);
             row.addView(fixture, new LinearLayout.LayoutParams(0, -2, 1));
-            row.addView(text(m.competition, 12, FAINT, false, 0));
+            row.addView(text(m.competition, 11, FAINT, false, 0));
             box.addView(row);
         }
         return box;
     }
 
+    /** Five equal cells, oldest to newest: the result letter on its colour, the score and the date under it. */
     private View form(List<Store.Match> results) {
         LinearLayout box = vertical();
-        box.addView(kicker("FORME · 5 DERNIERS MATCHS"));
+        box.addView(kicker("FORME DU MOMENT"));
         if (results.isEmpty()) {
-            box.addView(text("Pas encore de résultat.", 14, DIM, false, 0));
+            box.addView(text("Pas encore de résultat.", 13, DIM, false, 0));
             return box;
         }
-        LinearLayout chips = horizontal();
-        chips.setPadding(0, px(8), 0, px(8));
-        for (Store.Match m : results) {
+        LinearLayout cells = horizontal();
+        cells.setPadding(0, px(6), 0, 0);
+        ZoneId zone = ZoneId.systemDefault();
+        for (int i = 0; i < results.size(); i++) {
+            Store.Match m = results.get(i);
             char r = m.result();
-            TextView chip = text(String.valueOf(r), 16, TEXT, true, 0);
-            chip.setGravity(Gravity.CENTER);
-            chip.setBackground(rounded(r == 'V' ? 0xFF1E9E5A : r == 'N' ? 0xFF6B7280 : 0xFFC81E3A, px(6)));
-            chips.addView(chip, lp(px(36), px(36), 0, 0, px(8), 0));
+            LinearLayout cell = vertical();
+            cell.setGravity(Gravity.CENTER_HORIZONTAL);
+            TextView letter = text(String.valueOf(r), 14, TEXT, true, 0);
+            letter.setGravity(Gravity.CENTER);
+            letter.setBackground(rounded(r == 'V' ? WIN : r == 'N' ? DRAW : LOSS, px(6)));
+            cell.addView(letter, new LinearLayout.LayoutParams(-1, px(28)));
+            TextView score = text(m.goalsFor + "-" + m.goalsAgainst, 13, TEXT, true, 0);
+            score.setGravity(Gravity.CENTER);
+            cell.addView(score, lp(-1, -2, 0, px(6), 0, 0));
+            TextView who = text((m.home ? "" : "@ ") + initials(m.opponent) + " · " + TINY.format(Instant.ofEpochMilli(m.startMs).atZone(zone)),
+                    10, FAINT, false, 0);
+            who.setGravity(Gravity.CENTER);
+            who.setSingleLine(true);
+            cell.addView(who, lp(-1, -2, 0, px(3), 0, 0));
+            cells.addView(cell, lp(0, -2, i == 0 ? 0 : px(8), 0, 0, 0));
+            ((LinearLayout.LayoutParams) cell.getLayoutParams()).weight = 1;
         }
-        box.addView(chips);
-        Store.Match last = results.get(results.size() - 1);
-        String score = last.home ? "Barça " + last.goalsFor + "-" + last.goalsAgainst + " " + last.opponent
-                : last.opponent + " " + last.goalsAgainst + "-" + last.goalsFor + " Barça";
-        box.addView(text("Dernier : " + score + " · " + last.competition, 13, DIM, false, 0));
+        box.addView(cells);
         return box;
     }
 
@@ -238,10 +279,10 @@ public final class DashboardActivity extends Activity {
         LinearLayout box = vertical();
         box.addView(kicker("LALIGA · CLASSEMENT"));
         if (rows.isEmpty()) {
-            box.addView(text("Classement pas encore chargé.", 14, DIM, false, 0));
+            box.addView(text("Classement pas encore chargé.", 13, DIM, false, 0));
             return box;
         }
-        box.addView(tableRow("#", "Équipe", "J", "Diff", "Pts", FAINT, false, 0));
+        box.addView(tableRow("#", "Équipe", "J", "Diff", "Pts", FAINT, false, 0, false), lp(-1, -2, 0, px(4), 0, px(2)));
         int barca = -1;
         for (int i = 0; i < rows.size(); i++) if (rows.get(i).teamId == Store.BARCA) barca = i;
         List<Integer> shown = new ArrayList<>();
@@ -249,45 +290,45 @@ public final class DashboardActivity extends Activity {
         if (barca >= 5) {
             for (int i = Math.max(5, barca - 1); i <= Math.min(rows.size() - 1, barca + 1); i++) shown.add(i);
         }
-        int previous = -1;
+        int previous = -1, n = 0;
         for (int i : shown) {
-            if (previous >= 0 && i != previous + 1) box.addView(tableRow("…", "", "", "", "", FAINT, false, 0));
+            if (previous >= 0 && i != previous + 1) box.addView(tableRow("", "···", "", "", "", FAINT, false, 0, false));
             Store.Row r = rows.get(i);
             boolean us = r.teamId == Store.BARCA;
             String diff = (r.goalDifference > 0 ? "+" : "") + r.goalDifference;
             box.addView(tableRow(String.valueOf(r.position), r.team, String.valueOf(r.played), diff,
-                    String.valueOf(r.points), us ? GOLD : TEXT, us, r.position <= 4 ? BLUE : 0));
+                    String.valueOf(r.points), us ? GOLD : TEXT, us, r.position <= 4 ? BLUE : 0, n++ % 2 == 1));
             previous = i;
         }
         Store.Row us = store.barcaRow();
         if (us != null) {
-            TextView summary = text(us.won + " V · " + us.draw + " N · " + us.lost + " D", 13, DIM, false, 0);
-            summary.setPadding(0, px(10), 0, 0);
+            TextView summary = text(us.won + " victoires · " + us.draw + " nuls · " + us.lost + " défaites", 11, DIM, false, 0);
+            summary.setPadding(px(8), px(8), 0, 0);
             box.addView(summary);
         }
         return box;
     }
 
     private View tableRow(String pos, String team, String played, String diff, String pts, int colour, boolean bold,
-                          int marker) {
+                          int marker, boolean zebra) {
         LinearLayout row = horizontal();
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(px(8), px(5), px(8), px(5));
-        if (bold) row.setBackground(rounded(0x33EDBB00, px(6)));
+        if (bold) row.setBackground(rounded(0x2EEDBB00, px(6)));
+        else if (zebra) row.setBackground(rounded(LINE, px(6)));
         View mark = new View(this);
-        if (marker != 0) mark.setBackgroundColor(marker);
-        row.addView(mark, lp(px(3), px(16), 0, 0, px(8), 0));
-        row.addView(cell(pos, colour, bold, px(26), Gravity.START));
-        TextView name = cell(team, colour, bold, 0, Gravity.START);
-        row.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(cell(played, colour, bold, px(34), Gravity.END));
-        row.addView(cell(diff, colour, bold, px(46), Gravity.END));
-        row.addView(cell(pts, colour, true, px(44), Gravity.END));
+        if (marker != 0) mark.setBackground(rounded(marker | 0xFF000000, px(1)));
+        row.addView(mark, lp(px(3), px(14), 0, 0, px(8), 0));
+        row.addView(cell(pos, colour, bold, px(24), Gravity.START));
+        row.addView(cell(team, colour, bold, 0, Gravity.START), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(cell(played, colour, bold, px(30), Gravity.END));
+        row.addView(cell(diff, colour, bold, px(42), Gravity.END));
+        row.addView(cell(pts, colour, true, px(40), Gravity.END));
         return row;
     }
 
     private TextView cell(String s, int colour, boolean bold, int width, int gravity) {
-        TextView t = text(s, 15, colour, bold, 0);
+        TextView t = text(s, 13, colour, bold, 0);
         t.setSingleLine(true);
         t.setEllipsize(TextUtils.TruncateAt.END);
         t.setGravity(gravity);
@@ -298,10 +339,10 @@ public final class DashboardActivity extends Activity {
     private View noKey() {
         LinearLayout box = vertical();
         box.addView(kicker("À CONFIGURER"));
-        box.addView(text("Il manque la clé football-data.org.", 22, TEXT, true, 0));
+        box.addView(text("Il manque la clé football-data.org.", 20, TEXT, true, 0));
         TextView how = text("Crée un compte gratuit sur football-data.org, puis depuis ton PC :\n\n"
                 + "adb shell am broadcast -n io.github.dewelchristopher.barca/.KeyReceiver "
-                + "-a io.github.dewelchristopher.barca.SET_KEY --es key TA_CLE", 15, DIM, false, 0);
+                + "-a io.github.dewelchristopher.barca.SET_KEY --es key TA_CLE", 13, DIM, false, 0);
         how.setPadding(0, px(12), 0, 0);
         box.addView(how);
         return box;
@@ -313,7 +354,7 @@ public final class DashboardActivity extends Activity {
         if (at == 0) return error == null ? "" : "Erreur : " + error;
         long min = Math.max(0, (System.currentTimeMillis() - at) / 60_000L);
         String age = min < 1 ? "à l'instant" : min < 60 ? "il y a " + min + " min" : "il y a " + (min / 60) + " h";
-        return (error == null ? "Mis à jour " + age : "Hors ligne (" + error + ")");
+        return error == null ? "Mis à jour " + age : "Hors ligne · " + error;
     }
 
     private static String duration(long ms) {
@@ -324,6 +365,17 @@ public final class DashboardActivity extends Activity {
         return (hours / 24) + " j " + (hours % 24) + " h";
     }
 
+    /** "Real Madrid" as "RM", "Girona" as "GIR". */
+    static String initials(String name) {
+        String[] words = name.trim().split("\\s+");
+        if (words.length >= 2) {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < Math.min(3, words.length); i++) if (!words[i].isEmpty()) b.append(words[i].charAt(0));
+            return b.toString().toUpperCase(Locale.FRENCH);
+        }
+        return name.substring(0, Math.min(3, name.length())).toUpperCase(Locale.FRENCH);
+    }
+
     private static String capitalise(String s) {
         return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
@@ -332,22 +384,27 @@ public final class DashboardActivity extends Activity {
 
     private View card(View content) {
         FrameLayout card = new FrameLayout(this);
-        card.setBackground(rounded(0x1FFFFFFF, px(14)));
-        card.setPadding(px(20), px(16), px(20), px(16));
-        card.addView(content);
+        card.setBackground(rounded(CARD, px(14)));
+        card.setPadding(px(18), px(14), px(18), px(14));
+        card.addView(content, new FrameLayout.LayoutParams(-1, -1));
         return card;
     }
 
-    private View stripe() {
-        GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {BLUE, GARNET, GOLD});
+    private GradientDrawable stripes() {
+        GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {BLUE, GARNET});
+        g.setCornerRadius(px(3));
+        return g;
+    }
+
+    private View divider() {
         View v = new View(this);
-        v.setBackground(g);
+        v.setBackgroundColor(LINE);
         return v;
     }
 
     private TextView kicker(String s) {
-        TextView t = text(s, 11, GOLD, true, 0.22f);
-        t.setPadding(0, 0, 0, px(4));
+        TextView t = text(s, 10, GOLD, true, 0.22f);
+        t.setPadding(0, 0, 0, px(6));
         return t;
     }
 

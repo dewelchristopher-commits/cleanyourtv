@@ -535,11 +535,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
         if (rowTop) {
-            // The row takes the room under the clock, so the panel moves to the bottom left.
+            // The row takes the room under the clock and the app's name the left under the row, so the panel moves
+            // to the bottom right, clear of both.
             FrameLayout.LayoutParams panel = (FrameLayout.LayoutParams) racePanel.getLayoutParams();
-            panel.gravity = Gravity.BOTTOM | Gravity.START;
+            panel.gravity = Gravity.BOTTOM | Gravity.END;
             panel.topMargin = 0;
-            panel.bottomMargin = (int) (64 * density);
+            panel.setMarginStart(0);
+            panel.setMarginEnd((int) (60 * density));
+            panel.bottomMargin = (int) (48 * density);
             racePanel.setLayoutParams(panel);
         }
         raceKicker = findViewById(R.id.raceKicker);

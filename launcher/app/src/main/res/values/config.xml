@@ -297,7 +297,7 @@
     <bool name="wallpaper_drift">false</bool>
 
     <!-- With single_row: the row of apps sits near the top of the screen, under the clock, with the focused app's
-         name below it instead of above, and the game_day panel moves to the bottom left, as on a games console's
+         name below it instead of above, and the game_day panel moves to the bottom right, as on a games console's
          home screen. A theme can set "row_top": true. -->
     <bool name="row_top">false</bool>
     <!-- Draw the dock band and its edge. false leaves the tiles floating on the wallpaper (config.xml dock_band). -->

@@ -150,7 +150,7 @@ A new key needs one there in the same pull request.
 | `dock_glass` | bool | The dock band as light frosted glass like the top bar's pills (`false` by default); suits `sky_intensity` or a wallpaper, where the solid band reads as a dark slab |
 | `floodlights` | bool | Soft stadium floodlight beams that sway slowly over the wallpaper while Home is on screen, for a stadium wallpaper such as `barca/`; they stand still with `animations` off or `reduced_motion` (`false` by default) |
 | `wallpaper_drift` | bool | A slow zoom and pan of the wallpaper, 40 seconds each way, while Home is on screen, so a photo feels alive; only the picture's view moves and nothing is decoded again. Still with `animations` off or `reduced_motion` (`false` by default) |
-| `row_top` | bool | With `single_row`, the row of apps sits near the top under the clock with the focused app's name below it, and the `game_day` panel moves to the bottom left, as on a games console's home screen (`false` by default) |
+| `row_top` | bool | With `single_row`, the row of apps sits near the top under the clock with the focused app's name below it, and the `game_day` panel moves to the bottom right, as on a games console's home screen (`false` by default) |
 | `dock_band` | bool | Draw the dock band and its edge (`true` by default); `false` leaves the tiles floating on the wallpaper with no band, border or dark slab |
 | `single_row` | bool | Every app in the dock's row, the dock apps first, scrolling sideways; no grid below (`false` by default; needs `dock_row`) |
 | `dock_band_all` | bool | With `single_row`, the band runs behind every app in the row, not only the dock apps (`false` by default) |
