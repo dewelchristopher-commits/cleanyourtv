@@ -182,10 +182,13 @@
             </intent-filter>
         </activity>
 
-        <!-- The same clock, started by Home itself after home_idle_clock_minutes without input. -->
+        <!-- The same clock, started by Home itself after home_idle_clock_minutes without input. Exported only to
+             holders of WRITE_SECURE_SETTINGS, which is the ADB shell, so it can be previewed from a computer:
+             tools/tv.py 'am start -n com.gathin.tvhome/.ClockActivity'. -->
         <activity
             android:name=".ClockActivity"
-            android:exported="false"
+            android:exported="true"
+            android:permission="android.permission.WRITE_SECURE_SETTINGS"
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
