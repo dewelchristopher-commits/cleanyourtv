@@ -719,10 +719,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // row_top: the row sits under the pomodoro card (or straight under the header), and the name goes below
             // it. The padding is in the grid's own coordinates, and the grid starts under the header, so measure.
             if (rowTop) {
-                int[] at = new int[2], base = new int[2];
-                grid.getLocationInWindow(at);
-                root.getLocationInWindow(base);
-                int gridTop = at[1] - base[1];
+                // Summed up the parents' tops, which are set before their children are laid out, so this is right
+                // during the very pass that places the grid (a window location can still be the old one then).
+                int gridTop = 0;
+                for (View p = grid; p != null && p != root; p = (View) p.getParent()) gridTop += p.getTop();
                 int above = pomodoroCard == null ? gridTop
                         : (int) (CARD_TOP_DP * density) + Math.max(pomodoroCard.getHeight(), (int) (100 * density));
                 int names = singleRow && !cfg.alwaysShowNames ? (int) (29 * density) : 0;   // added back just below
